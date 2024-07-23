@@ -2,6 +2,7 @@
 #define __EXERCISE_H__
 
 #include <iostream>
+#include <cstring>
 
 #define ASSERT(COND, MSG)                                                                         \
     if (!(COND)) {                                                                                \
