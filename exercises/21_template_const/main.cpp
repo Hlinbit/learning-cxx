@@ -7,10 +7,19 @@ template<unsigned int N, class T>
 struct Tensor {
     unsigned int shape[N];
     T *data;
+    unsigned int table[N];
 
-    Tensor(unsigned int const shape_[N]) {
+    Tensor(unsigned int const shape_[N]): table{1} {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
+        for (int i = 0; i < N; i++) {
+            shape[i] = shape_[i];
+            table[i] = 1;
+            size *= shape_[i];
+            for (int j = i + 1; j < N; j++) {
+                table[i] *= shape_[j];
+            }
+        }
         data = new T[size];
         std::memset(data, 0, size * sizeof(T));
     }
@@ -18,9 +27,33 @@ struct Tensor {
         delete[] data;
     }
 
-    // 为了保持简单，禁止复制和移动
+    // 禁止拷贝构造函数和赋值运算符
     Tensor(Tensor const &) = delete;
-    Tensor(Tensor &&) noexcept = delete;
+    Tensor& operator=(Tensor const &) = delete;
+
+    // 允许移动构造函数和移动赋值运算符
+    Tensor(Tensor &&other) noexcept {
+        for (unsigned int i = 0; i < N; ++i) {
+            shape[i] = other.shape[i];
+            table[i] = other.table[i];
+        }
+        data = other.data;
+        other.data = nullptr;
+    }
+
+    Tensor& operator=(Tensor &&other) noexcept {
+        if (this != &other) {
+            delete[] data;
+
+            for (unsigned int i = 0; i < N; ++i) {
+                shape[i] = other.shape[i];
+                table[i] = other.table[i];
+            }
+            data = other.data;
+            other.data = nullptr;
+        }
+        return *this;
+    }
 
     T &operator[](unsigned int const indices[N]) {
         return data[data_index(indices)];
@@ -32,10 +65,12 @@ struct Tensor {
 private:
     unsigned int data_index(unsigned int const indices[N]) const {
         unsigned int index = 0;
-        for (unsigned int i = 0; i < N; ++i) {
-            ASSERT(indices[i] < shape[i]);
-            // TODO: 计算 index
+        
+        for (unsigned int i = 0; i < N; i++) {
+            ASSERT(indices[i] < shape[i], true);
+            index += indices[i] * table[i];
         }
+        return index;
     }
 };
 
